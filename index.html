@@ -114,6 +114,7 @@ body::before{background:#062f24}
 .lgc img.lg{width:150px;height:150px;object-fit:contain;background:#fff;border-radius:20px;padding:6px;margin-bottom:12px;box-shadow:0 6px 20px rgba(0,0,0,.15)}
 .lgc h1{font-size:22px}.lgc label{text-align:left}
 .lgc button{background:linear-gradient(90deg,#0b8a55,#12a86a);padding:12px;font-size:15px}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#1b1f27;color:#fff;padding:12px 18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:100;max-width:min(560px,92vw);display:none;white-space:pre-wrap;font-size:14px}
 .stt{font-size:12px;color:#fff;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.16);align-self:center}
 .top .acts #svb{background:#f59e0b;color:#1b1200;border-color:#f59e0b;font-weight:700}.top .acts #svb:disabled{opacity:.5;cursor:not-allowed}
 </style></head><body>
@@ -129,6 +130,8 @@ body::before{background:#062f24}
  <textarea id="ti" rows="6" placeholder="…atau tempel data di sini" style="font-size:12px"></textarea>
  <p class="mut" id="im"></p>
  <div class="acts" style="justify-content:flex-end"><button onclick="di.close()">Tutup</button><button onclick="doImp('replace')">Ganti semua data</button><button class="p" onclick="doImp('merge')">Tambah / perbarui</button></div></dialog>
+<dialog class="dlg ui" id="dq"><h3 id="dqt"></h3><p id="dqm" style="white-space:pre-wrap;margin:0 0 8px"></p><input id="dqi" style="margin:4px 0 8px"><div class="acts" style="justify-content:flex-end"><button id="dqc">Batal</button><button class="p" id="dqo">OK</button></div></dialog>
+<div id="toast"></div>
 <dialog class="dlg ui" id="db"><h3>Cadangan &amp; Pemulihan</h3>
  <p class="mut">Salin teks JSON ini sebagai cadangan seluruh buku induk. Untuk memulihkan, tempel kembali lalu tekan “Pulihkan”.</p>
  <textarea id="tb" rows="10" style="font:11px ui-monospace,monospace"></textarea><p class="mut" id="bm"></p>
@@ -149,6 +152,7 @@ function load(){try{D=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(!D.mig22){D.students.forEach(function(s){if(/^s\d{3}$/.test(s.id)&&!s.masuk)s.masuk="2022"});D.mig22=1;try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
  if(D.seedv!=3){var have={};D.students.forEach(function(s){have[s.id]=1;if(s.nis||s.nisn)have['n'+s.nis+'|'+s.nisn]=1});SEED.forEach(function(s){if(!have[s.id]&&!have['n'+s.nis+'|'+s.nisn])D.students.push(JSON.parse(JSON.stringify(s)))});D.students=D.students.filter(function(s){return(s.nama||s.nis||s.nisn)&&!/^CONTOH SISWA/.test(s.nama||'')});D.seedv=3;try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
  if(!D.dirty)D.dirty={};if(!D.del)D.del={};if(!D.kelasList)D.kelasList=['XII DKV 1','XII DKV 2','XII TSM','XII TKR 1','XII TKR 2','XII TITL 1','XII TITL 2'];
+ if(!D.purge1){var bad=function(s){return /^\s*7\s*-\s*[AB]/i.test(s.kelas||'')||/^(NIP\.?|Wali Kelas|Petugas|_+)$/i.test((s.nama||'').trim())||(!s.nama&&!s.nis&&!s.nisn&&!D.dirty[s.id])};D.students=D.students.filter(function(s){if(bad(s)){delete D.dirty[s.id];return false}return true});D.purge1=1}if(!D.purge2){D.students=D.students.filter(function(s){var b=(s.kelas||"").trim().toUpperCase()=="X TITL 1";if(b)delete D.dirty[s.id];return !b});D.purge2=1}
  cid=(D.students.filter(function(s){return s.nama})[0]||D.students[0]||{}).id||null}
 var tmr;function save(){clearTimeout(tmr);tmr=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}},300)}
 function cur(){return D.students.filter(function(s){return s.id==cid})[0]}
@@ -213,9 +217,9 @@ function pUrut(){var h="<div class=pw><div class=paper><h2>II. NOMOR URUT PESERT
 /* ---------- unduhan ---------- */
 var DLC=null;
 function fn(s){return String(s).replace(/[\\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim()}
-function dlErr(e){if(e&&e.code=='declined')return;alert('Unduhan gagal: '+((e&&(e.message||e.code))||e))}
-function dlSave(name,data){if(!DLC){alert('Fitur unduh hanya tersedia saat halaman dibuka lewat claude.ai (aplikasi atau situs).');return Promise.resolve()}return DLC.save({filename:name,data:data}).catch(dlErr)}
-function needX(){if(typeof XLSX=='undefined'){alert('Pustaka Excel belum termuat. Muat ulang halaman, lalu coba lagi.');return true}return false}
+function dlErr(e){if(e&&e.code=='declined')return;toast('Unduhan gagal: '+((e&&(e.message||e.code))||e))}
+function dlSave(name,data){if(!DLC){toast('Fitur unduh hanya tersedia saat halaman dibuka lewat claude.ai (aplikasi atau situs).');return Promise.resolve()}return DLC.save({filename:name,data:data}).catch(dlErr)}
+function needX(){if(typeof XLSX=='undefined'){toast('Pustaka Excel belum termuat. Muat ulang halaman, lalu coba lagi.');return true}return false}
 function FL(){var f=[['nis','Nomor Induk (NIS)'],['nisn','NISN'],['nama','Nama Lengkap'],['jk','Jenis Kelamin'],['kelas','Kelas']],seen={nis:1,nisn:1,nama:1,jk:1,kelas:1};LI.forEach(function(q){var pre=q[0]=='E'?'Ayah - ':q[0]=='F'?'Ibu - ':q[0]=='G'?'Wali - ':'';q[2].forEach(function(x){if(x[2]&&!seen[x[2]]){seen[x[2]]=1;f.push([x[2],pre+(x[1]||'Bea siswa').replace(/^[a-z]\.\s*/,'')])}})});return f.concat([['pr0','Prestasi 1'],['pr1','Prestasi 2'],['pr2','Prestasi 3'],['catatan','Catatan']])}
 function tbl(list){var f=FL();return[['No'].concat(f.map(function(x){return x[1]}))].concat(list.map(function(s,i){return[i+1].concat(f.map(function(x){return s[x[0]]||''}))}))}
 function csvOf(a){return '\ufeff'+a.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\r\n')}
@@ -230,7 +234,7 @@ function sBook(s){var a=[['IV. LEMBAR BUKU INDUK SISWA'],[],['Nomor Induk Siswa'
  var ws=XLSX.utils.aoa_to_sheet(a);ws['!cols']=[{wch:54},{wch:2},{wch:80}];var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Lembar Buku Induk');return wb}
 function sFile(s,i){return fn((i?i+'. ':'')+(s.nis||'')+'. '+(s.nama||'').toUpperCase())+'.xlsx'}
 function dlStu(id){var s=D.students.filter(function(x){return x.id==id})[0];if(!s||needX())return;return dlSave(sFile(s,0),XLSX.write(sBook(s),{type:'array',bookType:'xlsx'}))}
-function dlZip(k){if(needX())return;if(typeof JSZip=='undefined'){alert('Pustaka ZIP belum termuat. Muat ulang halaman.');return}var l=kl(k),z=new JSZip(),m=$('dlm');m.textContent='Menyiapkan '+l.length+' berkas…';
+function dlZip(k){if(needX())return;if(typeof JSZip=='undefined'){toast('Pustaka ZIP belum termuat. Muat ulang halaman.');return}var l=kl(k),z=new JSZip(),m=$('dlm');m.textContent='Menyiapkan '+l.length+' berkas…';
  l.forEach(function(s,i){z.file(sFile(s,i+1),XLSX.write(sBook(s),{type:'array',bookType:'xlsx'}))});
  return z.generateAsync({type:'blob'}).then(function(b){m.textContent='';return dlSave('Buku_Induk_'+(k?fn(k).replace(/ /g,'_'):'Semua_Kelas')+'.zip',b)}).catch(function(e){m.textContent='';dlErr(e)})}
 function dlRun(a){if(a[0]=='db')dlDb(a[2]||'',a[1]);else if(a[0]=='zip')dlZip(a[1]||'');else if(a[0]=='stu')dlStu(a[1])}
@@ -300,14 +304,14 @@ function doImp(mode){if(!pending||pending.length<2){$("im").textContent="Belum a
  pending.slice(hi+1).forEach(function(r){var o={};map.forEach(function(k,i){if(k&&String(r[i]==null?"":r[i]).trim())o[k]=String(r[i]).trim()});if(!o.nama)return;
   if(o._tl||o._tgl){o.ttl=o.ttl||[o._tl,o._tgl].filter(Boolean).join(", ")}delete o._tl;delete o._tgl;
   if(o.jk){var j=o.jk.charAt(0).toLowerCase();o.jk=j=="l"?"Laki-laki":(j=="p"||j=="w")?"Perempuan":o.jk}list.push(o)});
- if(mode=="replace"){if(!confirm("Ganti seluruh data siswa saat ini dengan "+list.length+" data baru?"))return;D.students.forEach(function(s){D.del[s.id]=1});D.dirty={};D.students=[]}
+ if(mode=="replace"){if(!window._okRepl){uiAsk({title:"Ganti semua data?",msg:"Ganti seluruh data siswa saat ini dengan "+list.length+" data baru?",ok:"Ganti semua"}).then(function(ok){if(ok){window._okRepl=1;try{doImp("replace")}finally{window._okRepl=0}}});return}D.students.forEach(function(s){D.del[s.id]=1});D.dirty={};D.students=[]}
  list.forEach(function(o){var m=D.students.filter(function(s){return(o.nis&&s.nis==o.nis)||(o.nisn&&s.nisn==o.nisn)})[0];if(m){Object.assign(m,o);markDirty(m.id);upd++}else{o.id=uid();if(!o.masuk)o.masuk=tp.slice(0,4);D.students.push(o);markDirty(o.id);add++}});
  save();cid=cid&&cur()?cid:(D.students[0]||{}).id;$("im").textContent="Selesai: "+add+" siswa ditambahkan, "+upd+" diperbarui.";render()}
 function openImp(){pending=null;$("im").textContent="";$("ti").value="";di.showModal()}
 function openBak(){bakShow();$("bm").textContent="";db.showModal()}
 function bakShow(){$("tb").value=JSON.stringify(D)}
 function bakCopy(){var t=$("tb");t.select();try{navigator.clipboard.writeText(t.value)}catch(e){document.execCommand("copy")}$("bm").textContent="Tersalin."}
-function bakRestore(){try{var a=JSON.parse($("tb").value);if(!a.sch||!Array.isArray(a.students))throw 0;if(!confirm("Ganti seluruh isi buku induk dengan cadangan ini?"))return;D=a;D.dirty=D.dirty||{};D.del=D.del||{};D.students.forEach(function(s){D.dirty[s.id]=1});D.dirty.__meta=1;cid=D.students.length?D.students[0].id:null;save();updSt();render();$("bm").textContent="Data dipulihkan."}catch(e){$("bm").textContent="Format cadangan tidak valid."}}
+function bakRestore(){try{var a=JSON.parse($("tb").value);if(!a.sch||!Array.isArray(a.students))throw 0;if(!window._okRs){uiAsk({title:"Pulihkan cadangan?",msg:"Ganti seluruh isi buku induk dengan cadangan ini?",ok:"Pulihkan"}).then(function(ok){if(ok){window._okRs=1;try{bakRestore()}finally{window._okRs=0}}});return}D=a;D.dirty=D.dirty||{};D.del=D.del||{};D.students.forEach(function(s){D.dirty[s.id]=1});D.dirty.__meta=1;cid=D.students.length?D.students[0].id:null;save();updSt();render();$("bm").textContent="Data dipulihkan."}catch(e){$("bm").textContent="Format cadangan tidak valid."}}
 /* ---------- tahun pelajaran ---------- */
 var TPS=['2022/2023','2024/2025','2025/2026'];
 function mY(s){if(s.masuk&&/^\d{4}/.test(String(s.masuk)))return +String(s.masuk).slice(0,4);return 2022}
@@ -322,7 +326,7 @@ function fixSel(){var ks=kelasTP();if(ks.indexOf(ktab)<0)ktab=ks[0]||'';var s=cu
 function startOf(s,k){return mY(s)+['X','XI','XII'].indexOf(k)}
 function cd(p,def){return '<input data-p="'+p+'" value="'+esc(get(p)||def||'')+'">'}
 /* ---------- PDF ---------- */
-function needP(){if(!window.jspdf){alert('Pustaka PDF belum termuat. Muat ulang halaman, lalu coba lagi.');return true}return false}
+function needP(){if(!window.jspdf){toast('Pustaka PDF belum termuat. Muat ulang halaman, lalu coba lagi.');return true}return false}
 function pdfDoc(){return new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true})}
 function pfile(s,i){return fn((i?i+'. ':'')+(s.nis||'')+'. '+(s.nama||'tanpa nama').toUpperCase())+'.pdf'}
 function pdfStudent(doc,s,first){
@@ -354,7 +358,7 @@ function pdfStudent(doc,s,first){
  doc.text(D.sch.kepsek||'(...................................)',M+10,y+22);doc.text('NIP. '+(D.sch.nipk||'.......................'),M+10,y+26);doc.text(s.petugas||'(...................................)',R-62,y+22);doc.text('NIP. '+(s.nippetugas||'.......................'),R-62,y+26)}
 function dlPdfOne(id){var s=D.students.filter(function(x){return x.id==id})[0];if(!s||needP())return;var d=pdfDoc();pdfStudent(d,s,true);return dlSave(pfile(s,0),d.output('arraybuffer'))}
 function dlPdf(k){if(needP())return;var l=kl(k),m=$('dlm');if(!l.length)return;m.textContent='Menyusun PDF '+l.length+' siswa…';setTimeout(function(){try{var d=pdfDoc();l.forEach(function(s,i){pdfStudent(d,s,i==0)});var b=d.output('arraybuffer');m.textContent='';dlSave('Buku_Induk_'+(k?fn(k).replace(/ /g,'_'):'Semua_Siswa')+'.pdf',b)}catch(e){m.textContent='';dlErr(e)}},40)}
-function dlPdfZip(k){if(needP())return;if(typeof JSZip=='undefined'){alert('Pustaka ZIP belum termuat. Muat ulang halaman.');return}var l=kl(k),m=$('dlm');if(!l.length)return;m.textContent='Menyusun '+l.length+' berkas PDF…';setTimeout(function(){try{var z=new JSZip();l.forEach(function(s,i){var d=pdfDoc();pdfStudent(d,s,true);z.file(pfile(s,i+1),d.output('arraybuffer'))});z.generateAsync({type:'blob'}).then(function(b){m.textContent='';dlSave('Buku_Induk_PDF_'+(k?fn(k).replace(/ /g,'_'):'Semua_Siswa')+'.zip',b)})}catch(e){m.textContent='';dlErr(e)}},40)}
+function dlPdfZip(k){if(needP())return;if(typeof JSZip=='undefined'){toast('Pustaka ZIP belum termuat. Muat ulang halaman.');return}var l=kl(k),m=$('dlm');if(!l.length)return;m.textContent='Menyusun '+l.length+' berkas PDF…';setTimeout(function(){try{var z=new JSZip();l.forEach(function(s,i){var d=pdfDoc();pdfStudent(d,s,true);z.file(pfile(s,i+1),d.output('arraybuffer'))});z.generateAsync({type:'blob'}).then(function(b){m.textContent='';dlSave('Buku_Induk_PDF_'+(k?fn(k).replace(/ /g,'_'):'Semua_Siswa')+'.zip',b)})}catch(e){m.textContent='';dlErr(e)}},40)}
 function dlRun(a){var t=a[0];if(t=='db')dlDb(a[2]||'',a[1]);else if(t=='pdf')dlPdf(a[1]||'');else if(t=='pdfz')dlPdfZip(a[1]||'');else if(t=='pdfs')dlPdfOne(a[1])}
 function dlf(q){q=(q||'').toLowerCase();var el=$('dlt');if(!el)return;el.innerHTML='<table><tr><th>No</th><th>Nama</th><th>Kelas</th><th>NIS</th><th></th></tr>'+D.students.map(function(s,i){return[s,i]}).filter(function(x){return !q||(x[0].nama+' '+x[0].nis+' '+x[0].kelas).toLowerCase().indexOf(q)>-1}).map(function(x){var s=x[0];return '<tr><td>'+(x[1]+1)+'</td><td>'+esc(s.nama)+'</td><td>'+esc(s.kelas)+'</td><td>'+esc(s.nis)+'</td><td><button class=sm2 data-dl="pdfs|'+s.id+'">Unduh PDF</button></td></tr>'}).join('')+'</table>'}
 function pDl(){var m={};D.students.forEach(function(s){var k=s.kelas||'';m[k]=(m[k]||0)+1});var ks=Object.keys(m).sort();
@@ -365,7 +369,12 @@ function pDl(){var m={};D.students.forEach(function(s){var k=s.kelas||'';m[k]=(m
  +'<div class=pn><h3>Data mentah (opsional)</h3><div class=acts><button class=sm2 data-dl="db|xlsx|">Database Excel</button><button class=sm2 data-dl="db|csv|">CSV</button><button class=sm2 data-dl="db|json|">JSON cadangan</button></div></div></div>'}
 /* ---------- kelas ---------- */
 function kelasTP(){var o=(D.kelasList||[]).slice();D.students.forEach(function(s){var k=s.kelas||'';if(inTP(s,tp)&&o.indexOf(k)<0)o.push(k)});return o}
-function kBar(){var ks=kelasTP();return '<div class="tpb kb2 ui">'+ks.map(function(k){var n=D.students.filter(function(s){return inTP(s,tp)&&(s.kelas||'')==k}).length;return '<button class="'+(ktab==k?'on':'')+'" data-k="'+esc(k)+'" onclick="setK(this.getAttribute(\'data-k\'))">'+esc(k||'(tanpa kelas)')+' <small>('+n+')</small></button>'}).join('')+'<button onclick="addKelas()">+ Kelas</button></div>'}
+function kBar(){var ks=kelasTP();return '<div class="tpb kb2 ui">'+ks.map(function(k){var n=D.students.filter(function(s){return inTP(s,tp)&&(s.kelas||'')==k}).length;return '<button class="'+(ktab==k?'on':'')+'" data-k="'+esc(k)+'" onclick="setK(this.getAttribute(\'data-k\'))">'+esc(k||'(tanpa kelas)')+' <small>('+n+')</small></button>'}).join('')+'<button onclick="addKelas()">+ Kelas</button><button onclick="renameKelas()">✎ Ubah nama kelas</button></div>'}
+function renameKelas(){var old=ktab||'';var n=(prompt('Ubah nama kelas '+(old||'(tanpa kelas)')+' menjadi:',old)||'').trim().toUpperCase();if(!n||n==old)return;
+ if((kelasTP().indexOf(n)>-1||(D.kelasList||[]).indexOf(n)>-1)&&!confirm('Kelas '+n+' sudah ada. Gabungkan siswa kelas '+(old||'(tanpa kelas)')+' ke kelas tersebut?'))return;
+ D.students.forEach(function(s){if((s.kelas||'')==old){s.kelas=n;markDirty(s.id)}});
+ if(!D.kelasList)D.kelasList=[];var i=D.kelasList.indexOf(old);if(i>-1){if(D.kelasList.indexOf(n)>-1)D.kelasList.splice(i,1);else D.kelasList[i]=n}else if(D.kelasList.indexOf(n)<0)D.kelasList.push(n);
+ markMeta();ktab=n;save();render()}
 function addKelas(){var n=(prompt('Nama kelas baru (mis. XII TITL 3):')||'').trim().toUpperCase();if(!n)return;if(!D.kelasList)D.kelasList=[];if(D.kelasList.indexOf(n)<0){D.kelasList.push(n);markMeta()}ktab=n;save();render()}
 function addS(){var s={id:uid(),nama:'',jk:'',kelas:ktab||'',masuk:tp.slice(0,4)};D.students.push(s);cid=s.id;markDirty(s.id);save();render()}
 function addInClass(){sec='input';addS()}
@@ -386,7 +395,7 @@ function afterRemote(){if(typing()){clearTimeout(afterRemote.t);afterRemote.t=se
 function applyStu(snap){var srv=!snap.metadata.fromCache;if(srv)GOT=true;if(snap.empty&&!srv)return;
  var rem={},order=[];snap.docs.forEach(function(d){rem[d.id]=d.data();order.push(d.id)});
  var loc={};D.students.forEach(function(s){loc[s.id]=s});var out=[],keepAll=snap.empty&&srv;
- order.forEach(function(id){if(D.del&&D.del[id])return;out.push(D.dirty[id]&&loc[id]?loc[id]:Object.assign({id:id},rem[id]))});
+ order.forEach(function(id){if(D.del&&D.del[id])return;var rd=rem[id]||{};if(!D.dirty[id]&&!(rd.nama||rd.nis||rd.nisn))return;out.push(D.dirty[id]&&loc[id]?loc[id]:Object.assign({id:id},rem[id]))});
  D.students.forEach(function(s){if(rem[s.id])return;if(D.dirty[s.id]||keepAll||(!D.synced&&srv)){out.push(s);D.dirty[s.id]=1}});
  D.students=out;if(srv)D.synced=1;if(keepAll)D.dirty.__meta=1;save();afterRemote()}
 function applyMeta(snap){if(!snap.exists)return;var d=snap.data()||{};if(!D.dirty.__meta){if(d.sch)D.sch=d.sch;if(d.pem)D.pem=d.pem;if(d.kelasList)D.kelasList=d.kelasList}save();afterRemote()}
@@ -401,8 +410,8 @@ function connectOnline(){if(DBH||CONN)return;CONN=true;updSt();
   DBH.doc('meta/app').onSnapshot(applyMeta,er);updSt()}).catch(function(){CONN=false;updSt()})}
 function retry(fn,n){n=n||0;return fn().catch(function(e){var c=e&&e.code;if(n<4&&(c=='resource_exhausted'||c=='unavailable'))return new Promise(function(r){setTimeout(r,700*(n+1)+Math.random()*400)}).then(function(){return retry(fn,n+1)});throw e})}
 async function saveOnline(){
- if(!DBH){alert('Belum tersambung ke database online. Buka halaman lewat claude.ai dan pastikan Anda sudah masuk.');return}
- if(RO){alert('Akun Anda hanya memiliki akses baca. Minta akses Editor untuk dapat menyimpan.');return}
+ if(!DBH){toast('Belum tersambung ke database online. Buka halaman lewat claude.ai dan pastikan Anda sudah masuk.');return}
+ if(RO){toast('Akun Anda hanya memiliki akses baca. Minta akses Editor untuk dapat menyimpan.');return}
  if(SAVING)return;var ids=Object.keys(D.dirty).filter(function(k){return k!='__meta'}),dels=Object.keys(D.del||{}),meta=!!D.dirty.__meta,total=ids.length+dels.length+(meta?1:0),done=0;
  if(!total){updSt();return}
  SAVING=true;updSt();
@@ -411,10 +420,23 @@ async function saveOnline(){
   for(var i=0;i<ids.length;i++){var id=ids[i],s=D.students.filter(function(x){return x.id==id})[0];if(s){await retry(function(){return DBH.collection('students').doc(id).set(JSON.parse(JSON.stringify(s)))})}delete D.dirty[id];setSt('Menyimpan '+(++done)+'/'+total+'\u2026')}
   for(var j=0;j<dels.length;j++){var did=dels[j];await retry(function(){return DBH.collection('students').doc(did).delete()});delete D.del[did];setSt('Menyimpan '+(++done)+'/'+total+'\u2026')}
   D.synced=1;LASTSAVE=new Date();save();SAVING=false;updSt();
- }catch(e){SAVING=false;save();updSt();var c=e&&e.code;alert('Penyimpanan online gagal'+(c?' ('+c+')':'')+': '+((e&&e.message)||e)+'\nPerubahan yang belum tersimpan tetap aman di perangkat ini; coba tekan Simpan lagi.')}
+ }catch(e){SAVING=false;save();updSt();var c=e&&e.code;toast('Penyimpanan online gagal'+(c?' ('+c+')':'')+': '+((e&&e.message)||e)+'\nPerubahan yang belum tersimpan tetap aman di perangkat ini; coba tekan Simpan lagi.')}
 }
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&(e.key=='s'||e.key=='S')&&DBH){e.preventDefault();saveOnline()}});
 window.addEventListener&&window.addEventListener('beforeunload',function(e){if(D&&nDirty()&&DBH){e.preventDefault();e.returnValue=''}});
+/* ---------- dialog & pesan di dalam halaman (pengganti alert/confirm/prompt) ---------- */
+function toast(m){var t=$('toast');if(!t)return;t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},6000)}
+function uiAsk(o){return new Promise(function(res){var d=$('dq'),inp=$('dqi');$('dqt').textContent=o.title||'';$('dqm').textContent=o.msg||'';inp.style.display=o.input?'block':'none';inp.value=o.def||'';$('dqo').textContent=o.ok||'OK';
+ var done=function(v){d.onclose=null;if(d.open)d.close();res(v)};
+ $('dqo').onclick=function(){done(o.input?inp.value:true)};$('dqc').onclick=function(){done(o.input?null:false)};
+ d.onclose=function(){res(o.input?null:false)};inp.onkeydown=function(e){if(e.key=='Enter'){e.preventDefault();done(inp.value)}};
+ d.showModal();if(o.input){inp.focus();inp.select()}})}
+function addKelas(){uiAsk({title:'Tambah kelas',msg:'Nama kelas baru (contoh: XII TITL 3):',input:true,def:'',ok:'Tambah'}).then(function(v){var n=(v||'').trim().toUpperCase();if(!n)return;if(!D.kelasList)D.kelasList=[];if(D.kelasList.indexOf(n)<0&&kelasTP().indexOf(n)<0){D.kelasList.push(n);markMeta()}ktab=n;save();render()})}
+function renameKelas(){var old=ktab||'',lb=old||'(tanpa kelas)';uiAsk({title:'Ubah nama kelas',msg:'Nama baru untuk kelas '+lb+':',input:true,def:old,ok:'Simpan nama'}).then(function(v){var n=(v||'').trim().toUpperCase();if(!n||n==old)return;
+ var go=function(){D.students.forEach(function(s){if((s.kelas||'')==old){s.kelas=n;markDirty(s.id)}});if(!D.kelasList)D.kelasList=[];var i=D.kelasList.indexOf(old);if(i>-1){if(D.kelasList.indexOf(n)>-1)D.kelasList.splice(i,1);else D.kelasList[i]=n}else if(D.kelasList.indexOf(n)<0)D.kelasList.push(n);markMeta();ktab=n;save();render()};
+ if(kelasTP().indexOf(n)>-1||(D.kelasList||[]).indexOf(n)>-1)uiAsk({title:'Gabungkan kelas?',msg:'Kelas '+n+' sudah ada. Gabungkan siswa kelas '+lb+' ke kelas tersebut?',ok:'Gabungkan'}).then(function(ok){if(ok)go()});else go()})}
+function delS(){var s=cur();if(!s)return;uiAsk({title:'Hapus siswa?',msg:'Hapus seluruh data '+(s.nama||'siswa ini')+'? Di database online, penghapusan baru berlaku setelah Anda menekan Simpan.',ok:'Hapus'}).then(function(ok){if(!ok)return;if(!D.del)D.del={};D.del[s.id]=1;delete D.dirty[s.id];D.students=D.students.filter(function(x){return x.id!=s.id});cid=(D.students.filter(function(x){return inTP(x,tp)&&(x.kelas||'')==ktab})[0]||D.students[0]||{}).id||null;save();updSt();render()})}
+function loadSeed(){uiAsk({title:'Muat data bawaan?',msg:'Ganti seluruh data siswa dengan '+SEED.length+' data bawaan SMKN 55? Perubahan yang belum disimpan akan hilang.',ok:'Ganti semua'}).then(function(ok){if(!ok)return;if(!D.del)D.del={};D.students.forEach(function(s){D.del[s.id]=1});D.students=JSON.parse(JSON.stringify(SEED));D.students.forEach(function(s){delete D.del[s.id];D.dirty[s.id]=1});D.seed1=1;cid=D.students[0].id;save();updSt();render()})}
 /* ---------- login ---------- */
 var HASH="6ac1008a42876078da36c0b10baff37e678bf059132b9d4f4915b57768a34547",fails=0,lockUntil=0,started=false;
 function sha(t){var b=new TextEncoder().encode(t);return crypto.subtle.digest("SHA-256",b).then(function(d){return Array.prototype.map.call(new Uint8Array(d),function(x){return("0"+x.toString(16)).slice(-2)}).join("")})}
