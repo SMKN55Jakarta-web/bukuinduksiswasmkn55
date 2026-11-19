@@ -121,6 +121,7 @@ body::before{background:#062f24}
 .printing .paper input,.printing .paper textarea{display:none!important}.printing .pv{display:block}.printing .pv.inl{display:inline-block}
 .printing .paper{min-height:0;height:auto;box-shadow:none;margin:0;overflow:visible}
 @media print{.paper,.paper *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.pv{display:block!important}.pv.inl{display:inline-block!important}.paper input,.paper textarea{display:none!important}}
+.mt{width:100%;border-collapse:collapse;font-size:13px}.mt th,.mt td{border-bottom:1px solid var(--bd);padding:4px 6px;text-align:left}.mt select{width:100%;padding:4px}
 .stt{font-size:12px;color:#fff;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.16);align-self:center}
 .top .acts #svb{background:#f59e0b;color:#1b1200;border-color:#f59e0b;font-weight:700}.top .acts #svb:disabled{opacity:.5;cursor:not-allowed}
 </style></head><body>
@@ -130,18 +131,20 @@ body::before{background:#062f24}
  <div class="acts"><span id="st" class="stt"></span><button id="svb" class="p" onclick="saveOnline()">Simpan</button><button onclick="openCloud()">Database</button><button onclick="openImp()">Impor Data</button><button onclick="openBak()">Cadangan</button><button class="p" onclick="printNow()">Cetak</button><button onclick="logout()">Keluar</button></div></div>
 <div class="lay" id="lay"><nav class="nav ui" id="nav"></nav><div class="side ui" id="side"></div><div id="main"></div></div>
 
-<dialog class="dlg ui" id="di"><h3>Impor Database Siswa</h3>
- <p class="mut">Pilih file Excel (.xlsx) atau CSV, atau tempel data langsung dari Excel (baris pertama = judul kolom). Kolom dikenali otomatis, mis. Nomor Induk, NISN, Nama, L/P, Kelas, Tempat Lahir, Tanggal Lahir, Agama, Alamat, Nama Ayah, Nama Ibu.</p>
- <input type="file" id="fi" accept=".xlsx,.xls,.csv,.txt" style="margin-bottom:8px">
- <textarea id="ti" rows="6" placeholder="…atau tempel data di sini" style="font-size:12px"></textarea>
- <p class="mut" id="im"></p>
- <div class="acts" style="justify-content:flex-end"><button onclick="di.close()">Tutup</button><button onclick="doImp('replace')">Ganti semua data</button><button class="p" onclick="doImp('merge')">Tambah / perbarui</button></div></dialog>
+<dialog class="dlg ui" id="di" style="width:min(860px,95vw);max-height:92vh;overflow:auto"><h3>Impor Data Siswa</h3>
+<p class="mut" style="margin:0 0 8px">Unggah <b>satu atau banyak berkas sekaligus</b>: Excel (.xlsx/.xls/.ods), CSV, tabel di Word (.docx), JSON cadangan, atau <b>ZIP</b> berisi berkas-berkas itu. File Excel <i>IV. Lembar Buku Induk Siswa</i> milik tiap siswa dibaca otomatis. Boleh juga tempel langsung dari Excel.</p>
+<div class="acts" style="margin-bottom:8px"><button class="sm2" onclick="impTemplate()">Unduh template Excel (mulai dari sini)</button></div>
+<div id="impdrop" style="border:2px dashed var(--bd);border-radius:12px;padding:14px;text-align:center"><input type="file" id="imf" multiple accept=".xlsx,.xls,.xlsb,.ods,.csv,.tsv,.txt,.docx,.json,.zip"><div class="mut" style="margin-top:6px">atau seret berkas ke sini</div></div>
+<textarea id="imt" rows="3" placeholder="…atau tempel data di sini (baris pertama = judul kolom)" style="margin-top:8px;font-size:12px"></textarea>
+<div class="fm" style="margin:8px 0"><div><label>Kelas (dipakai jika berkas tidak memuat kelas)</label><input id="imk" placeholder="mis. XII TITL 1"></div><div><label>Tahun masuk / angkatan (jika kosong di berkas)</label><input id="imy" placeholder="2022"></div></div>
+<div id="im" class="mut"></div><div id="imm"></div>
+<div class="acts" style="justify-content:flex-end;margin-top:10px"><button onclick="di.close()">Tutup</button><button onclick="impGo('replace')">Ganti semua data</button><button class="p" onclick="impGo('merge')">Tambah / perbarui</button></div></dialog>
 <dialog class="dlg ui" id="dq"><h3 id="dqt"></h3><p id="dqm" style="white-space:pre-wrap;margin:0 0 8px"></p><input id="dqi" style="margin:4px 0 8px"><div class="acts" style="justify-content:flex-end"><button id="dqc">Batal</button><button class="p" id="dqo">OK</button></div></dialog>
 <div id="toast"></div>
 <dialog class="dlg ui" id="dc"><h3>Database Online (Google Sheets)</h3>
 <p class="mut" style="margin:0 0 8px">Hubungkan aplikasi ke Google Sheets milik sekolah agar data tersimpan online dan sama di semua perangkat. Pengaturan ini cukup dilakukan sekali per perangkat.</p>
 <ol class="mut" style="padding-left:18px;margin:0 0 10px;line-height:1.5"><li>Buat Google Sheet baru, lalu menu <b>Ekstensi &gt; Apps Script</b>.</li><li>Klik tombol di bawah untuk menyalin kode, hapus isi editor, tempel, lalu <b>ganti KUNCI</b> dengan kata sandi Anda dan simpan.</li><li><b>Terapkan &gt; Deployment baru &gt; Aplikasi web</b>. Jalankan sebagai: <b>Saya</b>. Akses: <b>Siapa saja</b>. Izinkan akses.</li><li>Salin URL berakhiran <b>/exec</b> ke kolom di bawah, isi kunci yang sama, lalu Hubungkan.</li></ol>
-<button class="sm2" onclick="cloudCopy()">Salin kode Apps Script</button>
+<button class="sm2" onclick="cloudCopy()">Salin kode Apps Script</button> <button class="sm2" onclick="cloudLink()">Salin tautan pengaturan (untuk perangkat lain)</button>
 <label>URL Aplikasi Web (berakhiran /exec)</label><input id="cu" placeholder="https://script.google.com/macros/s/.../exec">
 <label>Kunci</label><input id="ck" type="password" autocomplete="off" placeholder="Kunci yang sama dengan di skrip">
 <p class="mut" id="cm" style="min-height:20px"></p>
@@ -391,8 +394,6 @@ LI.forEach(function(s,i){if("EFG".indexOf(s[0])>-1)return;s[2].forEach(function(
 function parseText(t){var d=t.indexOf("\t")>-1?"\t":(t.split(";").length>t.split(",").length?";":","),rows=[],r=[],cc="",q=false;for(var i=0;i<t.length;i++){var ch=t[i];if(q){if(ch=='"'){if(t[i+1]=='"'){cc+='"';i++}else q=false}else cc+=ch}else if(ch=='"')q=true;else if(ch==d){r.push(cc);cc=""}else if(ch=="\n"||ch=="\r"){if(ch=="\r"&&t[i+1]=="\n")i++;r.push(cc);rows.push(r);r=[];cc=""}else cc+=ch}if(cc||r.length){r.push(cc);rows.push(r)}return rows}
 function setPending(rows){pending=rows;var hi=hdrIdx(rows),h=rows[hi]||[],ok=[],bad=[];h.forEach(function(x){if(!String(x).trim())return;(AL[norm(x)]?ok:bad).push(x)});$("im").innerHTML="<b>"+Math.max(0,rows.length-hi-1)+" baris</b> terbaca. Kolom dikenali: "+(ok.join(", ")||"-")+(bad.length?"<br>Belum dikenali (diabaikan): "+bad.join(", "):"")}
 function hdrIdx(rows){var i=rows.findIndex(function(r){return r.some(function(x){return/nama/i.test(String(x))})});return i<0?0:i}
-$("fi").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();if(/\.(csv|txt)$/i.test(f.name)){r.onload=function(){setPending(parseText(r.result))};r.readAsText(f)}else{if(typeof XLSX=="undefined"){$("im").textContent="Pustaka Excel tidak termuat. Tempel data dari Excel pada kotak di bawah.";return}r.onload=function(){var wb=XLSX.read(r.result,{type:"array"}),nm=wb.SheetNames.filter(function(n){return/urut|siswa|peserta|data/i.test(n)})[0]||wb.SheetNames[0];setPending(XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,raw:false,defval:""}));$("im").insertAdjacentHTML("afterbegin","Lembar: <b>"+esc(nm)+"</b><br>")};r.readAsArrayBuffer(f)}};
-$("ti").oninput=function(){setPending(parseText(this.value))};
 function doImp(mode){if(!pending||pending.length<2){$("im").textContent="Belum ada data untuk diimpor.";return}
  var hi=hdrIdx(pending),map=pending[hi].map(function(x){return AL[norm(x)]||null}),add=0,upd=0,list=[];
  pending.slice(hi+1).forEach(function(r){var o={};map.forEach(function(k,i){if(k&&String(r[i]==null?"":r[i]).trim())o[k]=String(r[i]).trim()});if(!o.nama)return;
@@ -504,7 +505,7 @@ function connectOnline(){if(DBH||CONN)return;CONN=true;updSt();
   DBH.doc('meta/app').onSnapshot(applyMeta,er);updSt()}).catch(function(){CONN=false;updSt()})}
 function retry(fn,n){n=n||0;return fn().catch(function(e){var c=e&&e.code;if(n<4&&(c=='resource_exhausted'||c=='unavailable'))return new Promise(function(r){setTimeout(r,700*(n+1)+Math.random()*400)}).then(function(){return retry(fn,n+1)});throw e})}
 async function saveOnline(){
- if(!DBH){if(window.claude&&window.claude.use)toast('Belum tersambung ke database online. Pastikan Anda sudah masuk di claude.ai.');else openCloud();return}
+ if(!DBH){if(window.claude&&window.claude.use)toast('Belum tersambung ke database online. Pastikan Anda sudah masuk di claude.ai.');else if(CLOUD&&CLOUD.url){toast('Menghubungkan ulang ke database online\u2026');connectGas(CLOUD).then(function(){saveOnline()}).catch(function(e){toast('Gagal terhubung ke database online: '+((e&&e.message)||e)+' Data tetap aman di perangkat ini.')})}else toast('Belum tersambung ke database online, jadi data baru tersimpan di perangkat ini saja. Klik tombol Database di atas untuk menghubungkan (cukup sekali).');return}
  if(RO){toast('Akun Anda hanya memiliki akses baca. Minta akses Editor untuk dapat menyimpan.');return}
  if(SAVING)return;if(DBH.kind=='gas')return saveGas();var ids=Object.keys(D.dirty).filter(function(k){return k!='__meta'}),dels=Object.keys(D.del||{}),meta=!!D.dirty.__meta,total=ids.length+dels.length+(meta?1:0),done=0;
  if(!total){updSt();return}
@@ -566,6 +567,7 @@ function pDl(){var m={};D.students.forEach(function(s){var k=s.kelas||'';m[k]=(m
 /* ---------- database online lewat Google Sheets (untuk GitHub Pages / di luar claude.ai) ---------- */
 var CLOUD=null;try{CLOUD=JSON.parse(localStorage.getItem('bi55-cloud')||'null')}catch(e){}
 var GAS={map:{},meta:null,t:0,timer:null};
+(function(){try{var m=/[#&]cfg=([^&]+)/.exec(location.hash||'');if(m){var c=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));if(c&&c.url&&c.key){CLOUD={url:c.url,key:c.key};localStorage.setItem('bi55-cloud',JSON.stringify(CLOUD));setTimeout(function(){toast('Pengaturan database online diterapkan di perangkat ini.')},600)}try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}}catch(e){}})();
 function gasCall(url,key,payload){payload.key=key;return fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)}).then(function(r){if(!r.ok)throw {code:'http_'+r.status,message:'Server membalas status '+r.status};return r.json()}).then(function(j){if(!j||j.ok===false)throw {code:(j&&j.code)||'error',message:(j&&j.error)||'Respon tidak valid dari server'};return j}).catch(function(e){if(e&&e.message&&e.code)throw e;throw {code:'network',message:'Tidak dapat menjangkau server. Periksa koneksi internet dan URL Apps Script.'}})}
 function gasMerge(j,force){var ch=force||(j.students&&j.students.length)||j.meta;(j.students||[]).forEach(function(r){if(r.deleted)delete GAS.map[r.id];else if(r.data)GAS.map[r.id]=r.data});if(j.meta)GAS.meta=j.meta;GAS.t=Math.max(GAS.t,(j.time||0)-5000);if(!ch)return;
  var docs=Object.keys(GAS.map).sort().map(function(id){return{id:id,data:function(){return JSON.parse(JSON.stringify(GAS.map[id]))}}});
@@ -591,6 +593,11 @@ function cloudConnect(){var u=$('cu').value.trim(),k=$('ck').value.trim();
  $('cm').textContent='Menghubungkan\u2026';stopPoll();
  gasCall(u,k,{action:'ping'}).then(function(){CLOUD={url:u,key:k};try{localStorage.setItem('bi55-cloud',JSON.stringify(CLOUD))}catch(e){}DBH=null;return connectGas(CLOUD)}).then(function(){$('cm').textContent='Berhasil terhubung. Data online sudah dimuat'+(D.dirty&&Object.keys(D.dirty).length?'; tekan Simpan untuk mengunggah data lokal.':'.')}).catch(function(e){$('cm').textContent='Gagal: '+((e&&e.message)||e)})}
 function cloudDisconnect(){stopPoll();CLOUD=null;try{localStorage.removeItem('bi55-cloud')}catch(e){}if(DBH&&DBH.kind=='gas')DBH=null;updSt();$('cm').textContent='Diputuskan. Aplikasi kembali ke mode lokal.'}
+function cloudLink(){if(!CLOUD||!CLOUD.url){$('cm').textContent='Hubungkan dulu, baru tautan pengaturan bisa disalin.';return}
+ var t=location.origin+location.pathname+'#cfg='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({url:CLOUD.url,key:CLOUD.key})))));
+ var ok=function(){toast('Tautan tersalin. Buka tautan itu di perangkat lain sekali saja; setelahnya langsung terhubung. Jaga kerahasiaannya karena berisi kunci.')};
+ var fb=function(){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast('Gagal menyalin tautan.')}document.body.removeChild(a)};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok).catch(fb);else fb()}
 function cloudCopy(){var t=$('gascode').textContent.replace(/^\n/,'');var ok=function(){toast('Kode Apps Script tersalin. Tempel di editor Apps Script.')};
  var fb=function(){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast('Gagal menyalin. Gunakan berkas Code.gs.')}document.body.removeChild(a)};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok).catch(fb);else fb()}
@@ -674,6 +681,76 @@ function printNow(){preparePrint();setTimeout(function(){window.print()},40)}
 function printAll(){sv='all';render();setTimeout(printNow,60)}
 function pdfCur(){var s=cur();if(s)dlPdfOne(s.id)}
 window.addEventListener&&window.addEventListener('beforeprint',preparePrint);window.addEventListener&&window.addEventListener('afterprint',undoPrint);
+/* ---------- impor v3: banyak berkas / ZIP / Excel / CSV / Word / lembar buku induk ---------- */
+var LROW={nama:8,panggil:9,jk:10,ttl:11,agama:12,warga:13,anakke:14,skandung:15,stiri:16,sangkat:17,yatim:18,bahasa:19,alamat:22,telp:24,tinggal:25,jarak:27,darah:30,penyakit:32,kelainan:33,tbbb:34,sebelum_lulus:38,sebelum_stt:39,sebelum_lama:40,terima_tingkat:42,terima_kelompok:43,terima_jurusan:44,terima_tgl:45,a_nama:48,a_ttl:49,a_agama:50,a_warga:51,a_pend:52,a_kerja:53,a_hasil:54,a_alamat:55,a_hidup:57,i_nama:60,i_ttl:61,i_agama:62,i_warga:63,i_pend:64,i_kerja:65,i_hasil:66,i_alamat:67,i_hidup:69,w_nama:72,w_ttl:73,w_agama:74,w_warga:75,w_pend:76,w_kerja:77,w_hasil:78,w_alamat:79,kesenian:83,olahraga:84,organisasi:85,laini:86,keluar_tgl:93,keluar_alasan:94,akhir_tamat:96,akhir_stb:97,lanjut:100,kerja_tgl:102,kerja_inst:103,kerja_hasil:105};
+var LSIG=[[8,'a.'],[10,'jenis kelami'],[22,'alamat'],[38,'a.'],[44,'c.'],[48,'nama'],[60,'nama'],[72,'nama'],[83,'kesenian'],[100,'melanjutkan']];
+var JURK={DKV:'Desain Komunikasi Visual',TSM:'Teknik Sepeda Motor',TKR:'Teknik Kendaraan Ringan',TITL:'Teknik Instalasi Tenaga Listrik'};
+var IMP={recs:[],tabs:[],msgs:[],n:0},IAL=null;
+function cvl(ws,a){var c=ws[a];if(!c||c.v==null)return '';return String(c.w!=null?c.w:c.v).replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim()}
+function lembarRec(ws){var ok=0;LSIG.forEach(function(x){if(cvl(ws,'C'+x[0]).toLowerCase().indexOf(x[1])==0)ok++});if(ok<7)return null;
+ var o={nis:cvl(ws,'P3'),nisn:cvl(ws,'P4')};Object.keys(LROW).forEach(function(k){o[k]=cvl(ws,'V'+LROW[k])});
+ if(!o.nama)o.nama=cvl(ws,'V7');if(!o.penyakit)o.penyakit=cvl(ws,'V31');if(!o.tinggal)o.tinggal=cvl(ws,'V26');
+ [89,90,91].forEach(function(r,i){var p=['X','AF','AN'].map(function(c){return cvl(ws,c+r)}).filter(Boolean);if(p.length)o['bea'+i]=p.join(' / ')});
+ [112,113,114].forEach(function(r,i){var v=cvl(ws,'C'+r);if(v)o['pr'+i]=v});
+ var cat=[120,121,122,123].map(function(r){return cvl(ws,'B'+r)}).filter(function(c){return c&&!/^[\u2026. ]+$/.test(c)});if(cat.length)o.catatan=cat.join('\n');
+ return o}
+function impAL(){if(IAL)return IAL;var a=Object.assign({},AL);FL().forEach(function(f){a[norm(f[1])]=f[0]});[['tempatlahir','_tl'],['tanggallahir','_tgl'],['tgllahir','_tgl'],['tahunmasuk','masuk'],['angkatan','masuk'],['nomorinduksiswa','nis'],['nomorinduksiswanasional','nisn']].forEach(function(x){a[x[0]]=x[1]});IAL=a;return a}
+function impFields(){return FL().map(function(f){return[f[0],f[1]]}).concat([['_tl','Tempat lahir (digabung ke TTL)'],['_tgl','Tanggal lahir (digabung ke TTL)'],['masuk','Tahun masuk']])}
+function kelasFromPath(p){var m=/(?:^|[^A-Za-z])(XII|XI|X)\s*[-_ ]\s*([A-Za-z]{2,5})(?:\s*[-_ ]?\s*(\d))?(?![A-Za-z])/.exec(p);if(m&&JURK[m[2].toUpperCase()])return (m[1]+' '+m[2]+(m[3]?' '+m[3]:'')).toUpperCase();var n=/(?:^|[^A-Za-z])(DKV|TSM|TKR|TITL)\s*[-_ ]?\s*(\d)?(?![A-Za-z])/i.exec(p);return n?('XII '+n[1]+(n[2]?' '+n[2]:'')).toUpperCase():''}
+function setTab(rows){var hi=hdrIdx(rows),h=rows[hi]||[],sig=h.map(norm).join('|'),A=impAL();var ex=IMP.tabs.filter(function(t){return t.sig==sig})[0];if(ex){ex.rows=ex.rows.concat(rows.slice(hi+1));return}
+ IMP.tabs.push({rows:rows,hi:hi,sig:sig,map:h.map(function(x){return A[norm(x)]||''})})}
+async function impOne(path,buf){var base=path.split('/').pop(),ext=(base.split('.').pop()||'').toLowerCase();
+ if(/^~\$|^\.|__MACOSX|desktop\.ini|thumbs\.db/i.test(path))return;
+ if(ext=='zip'){if(typeof JSZip=='undefined'){IMP.msgs.push('Pustaka ZIP belum termuat: '+base);return}var z=await JSZip.loadAsync(buf),names=Object.keys(z.files).filter(function(n){return !z.files[n].dir});for(var i=0;i<names.length;i++)await impOne(path.replace(/\.zip$/i,'')+'/'+names[i],await z.files[names[i]].async('arraybuffer'));return}
+ IMP.n++;
+ if(/^(xlsx|xls|xlsb|ods)$/.test(ext)){if(typeof XLSX=='undefined'){IMP.msgs.push('Pustaka Excel belum termuat: '+base);return}var wb=XLSX.read(buf,{type:'array'}),ln=wb.SheetNames.filter(function(n){return /lembar\s*buku\s*induk|^iv\./i.test(n)})[0];
+  if(ln){var r=lembarRec(wb.Sheets[ln]);if(r){r._path=path;IMP.recs.push(r)}else IMP.msgs.push('Tata letak lembar tidak dikenali: '+base);return}
+  var best=null;wb.SheetNames.forEach(function(n){var rows=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:false,defval:''});var hi=hdrIdx(rows);if(rows.length>1&&/nama/i.test(rows[hi].join(' '))&&(!best||rows.length>best.length))best=rows});
+  if(best)setTab(best);else IMP.msgs.push('Tidak ditemukan tabel dengan kolom "Nama" di: '+base);return}
+ if(/^(csv|tsv|txt)$/.test(ext)){setTab(parseText(new TextDecoder('utf-8').decode(buf)));return}
+ if(ext=='json'){try{var j=JSON.parse(new TextDecoder('utf-8').decode(buf)),a=Array.isArray(j)?j:(j&&j.students);if(Array.isArray(a))a.forEach(function(s){if(s&&s.nama){s._path=path;IMP.recs.push(s)}});else IMP.msgs.push('JSON tidak berisi daftar siswa: '+base)}catch(e){IMP.msgs.push('JSON tidak valid: '+base)}return}
+ if(ext=='docx'){if(typeof JSZip=='undefined'){IMP.msgs.push('Pustaka ZIP belum termuat.');return}var zz=await JSZip.loadAsync(buf),xf=zz.file('word/document.xml');if(!xf){IMP.msgs.push('Dokumen Word tidak valid: '+base);return}
+  var dom=new DOMParser().parseFromString(await xf.async('string'),'application/xml'),tb=Array.prototype.slice.call(dom.getElementsByTagName('w:tbl')),found=0;
+  tb.forEach(function(t){var rows=Array.prototype.slice.call(t.getElementsByTagName('w:tr')).map(function(tr){return Array.prototype.slice.call(tr.childNodes).filter(function(c){return c.nodeName=='w:tc'}).map(function(tc){return Array.prototype.slice.call(tc.getElementsByTagName('w:t')).map(function(x){return x.textContent}).join('').trim()})});if(rows.length>1&&/nama/i.test((rows[hdrIdx(rows)]||[]).join(' '))){setTab(rows);found++}});
+  if(!found)IMP.msgs.push('Tidak ada tabel dengan kolom "Nama" di Word: '+base);return}
+ IMP.msgs.push('Format tidak dapat dibaca otomatis ('+base+'). Simpan sebagai Excel, CSV, atau Word berisi tabel.')}
+async function impFiles(list){impReset(true);var m=$('im');m.textContent='Membaca berkas\u2026';
+ try{for(var i=0;i<list.length;i++){m.textContent='Membaca '+(i+1)+' / '+list.length+'\u2026';await impOne(list[i].name,await list[i].arrayBuffer())}}catch(e){IMP.msgs.push('Gagal membaca: '+((e&&e.message)||e))}
+ renderImp()}
+function impReset(keepMsg){IMP={recs:[],tabs:[],msgs:[],n:0};if(!keepMsg){$('im').innerHTML='';$('imm').innerHTML=''}}
+function impMap(ti,ci,v){IMP.tabs[ti].map[ci]=v;renderImp()}
+function tabRecs(t){var out=[];for(var i=t.hi+1;i<t.rows.length;i++){var r=t.rows[i],o={};t.map.forEach(function(k,c){if(k){var v=String(r[c]==null?'':r[c]).trim();if(v)o[k]=v}});if(!o.nama||o.nama.length<2||/^(NIP\.?|Wali Kelas|Kepala Sekolah|Petugas|Jumlah|_+)$/i.test(o.nama))continue;out.push(o)}return out}
+function impBuild(){var all=IMP.recs.slice(),dk=($('imk').value||'').trim().toUpperCase(),dy=($('imy').value||'').trim()||tp.slice(0,4);IMP.tabs.forEach(function(t){all=all.concat(tabRecs(t))});
+ var seen={};return all.map(function(o){o=Object.assign({},o);var p=o._path||'';delete o._path;
+  if(o._tl||o._tgl){o.ttl=o.ttl||[o._tl,o._tgl].filter(Boolean).join(', ')}delete o._tl;delete o._tgl;
+  Object.keys(o).forEach(function(k){if(typeof o[k]=='string'){o[k]=o[k].trim();if(o[k]==='')delete o[k]}});
+  if(o.jk){var j=o.jk.charAt(0).toLowerCase();o.jk=j=='l'?'Laki-laki':(j=='p'||j=='w')?'Perempuan':o.jk}
+  if(o.nis)o.nis=o.nis.replace(/\.0+$/,'');if(o.nisn){o.nisn=o.nisn.replace(/\.0+$/,'')}
+  o.kelas=(o.kelas||kelasFromPath(p)||dk||'').toUpperCase().replace(/\s+/g,' ').trim();if(!o.kelas)delete o.kelas;
+  if(o.terima_jurusan&&/^teknik kend/i.test(o.terima_jurusan))o.terima_jurusan='Teknik Kendaraan Ringan';
+  if(!o.terima_jurusan&&o.kelas){var c=(/\b(DKV|TSM|TKR|TITL)\b/.exec(o.kelas)||[])[1];if(c)o.terima_jurusan=JURK[c]}
+  if(!o.masuk)o.masuk=dy;return o}).filter(function(o){var k=o.nis||o.nisn||o.nama;if(seen[k])return false;seen[k]=1;return true})}
+function renderImp(){var h='<b>'+IMP.n+' berkas dibaca</b>';if(IMP.recs.length)h+=' \u00b7 '+IMP.recs.length+' lembar buku induk siswa';var tot=0;IMP.tabs.forEach(function(t){tot+=Math.max(0,t.rows.length-t.hi-1)});if(IMP.tabs.length)h+=' \u00b7 '+tot+' baris tabel';
+ if(IMP.msgs.length)h+='<br>'+IMP.msgs.map(esc).join('<br>');
+ var all=IMP.n||IMP.msgs.length?impBuild():[];if(all.length){var by={};all.forEach(function(o){by[o.kelas||'(tanpa kelas)']=(by[o.kelas||'(tanpa kelas)']||0)+1});h+='<br>Siap diimpor: <b>'+all.length+' siswa</b> ('+Object.keys(by).sort().map(function(k){return esc(k)+': '+by[k]}).join(', ')+')';var bn=all.filter(function(o){return o.nisn&&!/^\d{10}$/.test(o.nisn)}).length;if(bn)h+='<br>Perhatian: '+bn+' NISN bukan 10 digit (periksa; angka 0 di depan sering hilang di Excel).'}
+ $('im').innerHTML=h;var mh='',F=impFields();
+ IMP.tabs.forEach(function(t,ti){var hd=t.rows[t.hi]||[];mh+='<p class=mut style="margin:10px 0 4px">Tabel '+(ti+1)+': cocokkan kolom dengan isian (kolom yang dikenali sudah terisi otomatis).</p><div style="overflow:auto;max-height:240px"><table class=mt><tr><th>Kolom di berkas</th><th>Contoh isi</th><th>Masuk ke isian</th></tr>';
+  hd.forEach(function(x,ci){if(!String(x).trim())return;var sm=(t.rows[t.hi+1]||[])[ci]||'';mh+='<tr><td>'+esc(x)+'</td><td>'+esc(String(sm).slice(0,30))+'</td><td><select onchange="impMap('+ti+','+ci+',this.value)"><option value="">(abaikan)</option>'+F.map(function(f){return '<option value="'+f[0]+'"'+(t.map[ci]==f[0]?' selected':'')+'>'+esc(f[1])+'</option>'}).join('')+'</select></td></tr>'});mh+='</table></div>'});
+ $('imm').innerHTML=mh}
+function impGo(mode){var all=impBuild();if(!all.length){$('im').innerHTML+='<br><b>Belum ada data siswa yang dapat diimpor.</b>';return}
+ var run=function(){var add=0,upd=0;if(mode=='replace'){if(!D.del)D.del={};D.students.forEach(function(s){D.del[s.id]=1});var mt=D.dirty&&D.dirty.__meta;D.dirty={};if(mt)D.dirty.__meta=1;D.students=[]}
+  all.forEach(function(o){var m=D.students.filter(function(s){return(o.nis&&s.nis==o.nis)||(o.nisn&&s.nisn==o.nisn)})[0];if(m){Object.assign(m,o);markDirty(m.id);upd++}else{o.id=uid();D.students.push(o);markDirty(o.id);add++}
+   if(o.kelas){if(!D.kelasList)D.kelasList=[];if(D.kelasList.indexOf(o.kelas)<0){D.kelasList.push(o.kelas);markMeta()}}});
+  save();updSt();if(!D.students.some(function(s){return s.id==cid}))cid=(D.students[0]||{}).id||null;render();
+  $('im').innerHTML='<b>Selesai:</b> '+add+' siswa ditambahkan, '+upd+' diperbarui. Tekan <b>Simpan</b> di bilah atas agar masuk ke database online.';toast('Impor selesai: '+add+' ditambahkan, '+upd+' diperbarui.')};
+ if(mode=='replace')uiAsk({title:'Ganti semua data?',msg:'Ganti seluruh data siswa saat ini dengan '+all.length+' siswa dari berkas?',ok:'Ganti semua'}).then(function(ok){if(ok)run()});else run()}
+function openImp(){impReset();$('imt').value='';$('imf').value='';$('imk').value=(typeof ktab!='undefined'&&sec=='siswa')?ktab:'';$('imy').value=tp.slice(0,4);di.showModal()}
+function impTemplate(){var h=['NIS','NISN','Nama Lengkap','Jenis Kelamin','Kelas','Tahun Masuk','Tempat Lahir','Tanggal Lahir','Agama','Alamat','No. Telepon','Nama Ayah','Pekerjaan Ayah','Nama Ibu','Pekerjaan Ibu','Nama Wali','Asal Sekolah','Jurusan'];
+ return xlsSave('Template_Impor_Siswa_SMKN55.xlsx',[{name:'Siswa',aoa:[h,['8001','0071234567','CONTOH NAMA SISWA (hapus baris ini)','Laki-laki','XII TITL 1','2022','Jakarta','01 Januari 2008','Islam','Jl. Contoh No. 1 RT 01/RW 02','081234567890','Nama Ayah','Wiraswasta','Nama Ibu','Ibu Rumah Tangga','','SMP Negeri 1 Jakarta','Teknik Instalasi Tenaga Listrik']],w:h.map(function(x,i){return i==9?34:20})},{name:'Petunjuk',aoa:[['Isi data mulai baris ke-2 pada lembar "Siswa". Baris pertama (judul kolom) jangan diubah.'],['Hapus baris contoh sebelum diunggah.'],['Jenis Kelamin: Laki-laki / Perempuan (atau L / P).'],['Kolom lain pada Buku Induk (data kesehatan, wali, dll.) dapat ditambahkan: gunakan judul kolom yang sama dengan menu Unduhan > Database lengkap (Excel).']],w:[110]}])}
+document.addEventListener('change',function(e){if(e.target&&e.target.id=='imf'&&e.target.files.length)impFiles(Array.prototype.slice.call(e.target.files))});
+document.addEventListener('input',function(e){if(e.target&&e.target.id=='imt'){impReset(true);if(e.target.value.trim()){IMP.n=1;setTab(parseText(e.target.value))}renderImp()}});
+document.addEventListener('input',function(e){if(e.target&&(e.target.id=='imk'||e.target.id=='imy')&&(IMP.n||IMP.msgs.length))renderImp()});
+['dragover','drop'].forEach(function(ev){document.addEventListener(ev,function(e){var z=e.target&&e.target.closest&&e.target.closest('#impdrop');if(!z)return;e.preventDefault();if(ev=='drop'&&e.dataTransfer&&e.dataTransfer.files.length)impFiles(Array.prototype.slice.call(e.dataTransfer.files))})});
 /* ---------- login ---------- */
 var HASH="6ac1008a42876078da36c0b10baff37e678bf059132b9d4f4915b57768a34547",fails=0,lockUntil=0,started=false;
 function sha(t){var b=new TextEncoder().encode(t);return crypto.subtle.digest("SHA-256",b).then(function(d){return Array.prototype.map.call(new Uint8Array(d),function(x){return("0"+x.toString(16)).slice(-2)}).join("")})}
