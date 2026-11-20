@@ -143,10 +143,11 @@ body::before{background:#062f24}
 <div id="toast"></div>
 <dialog class="dlg ui" id="dc"><h3>Database Online (Google Sheets)</h3>
 <p class="mut" style="margin:0 0 8px">Hubungkan aplikasi ke Google Sheets milik sekolah agar data tersimpan online dan sama di semua perangkat. Pengaturan ini cukup dilakukan sekali per perangkat.</p>
-<ol class="mut" style="padding-left:18px;margin:0 0 10px;line-height:1.5"><li>Buat Google Sheet baru, lalu menu <b>Ekstensi &gt; Apps Script</b>.</li><li>Klik tombol di bawah untuk menyalin kode, hapus isi editor, tempel, lalu <b>ganti KUNCI</b> dengan kata sandi Anda dan simpan.</li><li><b>Terapkan &gt; Deployment baru &gt; Aplikasi web</b>. Jalankan sebagai: <b>Saya</b>. Akses: <b>Siapa saja</b>. Izinkan akses.</li><li>Salin URL berakhiran <b>/exec</b> ke kolom di bawah, isi kunci yang sama, lalu Hubungkan.</li></ol>
+<ol class="mut" style="padding-left:18px;margin:0 0 10px;line-height:1.5"><li>Buka <b>script.google.com</b> &gt; <b>Proyek baru</b> (boleh juga dari Google Sheet: Ekstensi &gt; Apps Script).</li><li>Klik tombol di bawah untuk menyalin kode, hapus isi editor, tempel, lalu <b>ganti KUNCI</b> dengan kata sandi Anda dan simpan.</li><li><b>Terapkan &gt; Deployment baru &gt; Aplikasi web</b>. Jalankan sebagai: <b>Saya</b>. Akses: <b>Siapa saja</b>. Izinkan akses.</li><li>Salin URL berakhiran <b>/exec</b> ke kolom di bawah, isi kunci yang sama, lalu Hubungkan. Google Sheet database dibuat otomatis.</li></ol><p class="mut" style="margin:0 0 8px;font-size:12px">Setelah kode diubah: Terapkan &gt; Kelola deployment &gt; ikon pensil &gt; Versi: Versi baru &gt; Terapkan (URL tetap sama).</p>
 <button class="sm2" onclick="cloudCopy()">Salin kode Apps Script</button> <button class="sm2" onclick="cloudLink()">Salin tautan pengaturan (untuk perangkat lain)</button>
 <label>URL Aplikasi Web (berakhiran /exec)</label><input id="cu" placeholder="https://script.google.com/macros/s/.../exec">
 <label>Kunci</label><input id="ck" type="password" autocomplete="off" placeholder="Kunci yang sama dengan di skrip">
+<label style="display:flex;gap:8px;align-items:center;margin:10px 0 4px;color:var(--tx)"><input type="checkbox" id="cauto" onchange="setAuto(this.checked)" style="width:auto"> Simpan otomatis setelah setiap perubahan (jeda sekitar 3 detik)</label>
 <p class="mut" id="cm" style="min-height:20px"></p>
 <div class="acts" style="justify-content:flex-end"><button onclick="$('dc').close()">Tutup</button><button onclick="cloudDisconnect()">Putuskan</button><button class="p" onclick="cloudConnect()">Hubungkan</button></div></dialog>
 <script type="text/plain" id="gascode">
@@ -154,20 +155,32 @@ body::before{background:#062f24}
  * BUKU INDUK DIGITAL SMK NEGERI 55 JAKARTA - penyimpanan online (Google Sheets)
  *
  * Cara pasang (sekali saja):
- * 1. Buat Google Sheet baru, lalu menu Ekstensi > Apps Script.
+ * 1. Buka script.google.com > Proyek baru. (Boleh juga dari Google Sheet: Ekstensi > Apps Script.)
  * 2. Hapus isi default, tempel seluruh kode ini.
  * 3. Ganti KUNCI di bawah dengan kata sandi buatan Anda sendiri, lalu simpan.
  * 4. Klik Terapkan > Deployment baru > jenis "Aplikasi web".
  *    Jalankan sebagai: Saya. Yang memiliki akses: Siapa saja. Klik Terapkan dan izinkan akses.
  * 5. Salin URL aplikasi web (berakhiran /exec) ke menu "Database" di aplikasi, isi KUNCI yang sama.
+ * Google Sheet database dibuat otomatis (jika skrip tidak menempel pada Sheet) dan tautannya ditampilkan di aplikasi.
+ * Jika kode ini diubah: Terapkan > Kelola deployment > ikon pensil > Versi: Versi baru > Terapkan (URL tetap sama).
  */
 var KUNCI = 'GANTI_KUNCI_RAHASIA_ANDA';
 var CHUNK = 45000, NCH = 6;
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function head_() { var h = ['id', 'updated', 'deleted']; for (var i = 1; i <= NCH; i++) h.push('data' + i); return h; }
+function ss_() {
+  var ss = null;
+  try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) { }
+  if (ss) return ss;
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty('SSID');
+  if (id) { try { return SpreadsheetApp.openById(id); } catch (e) { } }
+  ss = SpreadsheetApp.create('Database Buku Induk SMKN 55 Jakarta');
+  props.setProperty('SSID', ss.getId());
+  return ss;
+}
 function store_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet(), sh = ss.getSheetByName('students');
+  var ss = ss_(), sh = ss.getSheetByName('students');
   if (!sh) {
     sh = ss.insertSheet('students'); sh.appendRow(head_()); sh.setFrozenRows(1);
     sh.getRange('A:A').setNumberFormat('@'); sh.getRange(1, 4, sh.getMaxRows(), NCH).setNumberFormat('@');
@@ -187,7 +200,7 @@ function doPost(e) {
 function handle_(p) {
   var sh = store_(), now = Date.now(), last = sh.getLastRow();
   var vals = last > 1 ? sh.getRange(2, 1, last - 1, 3 + NCH).getValues() : [];
-  if (p.action === 'ping') return { ok: true, time: now };
+  if (p.action === 'ping') return { ok: true, time: now, sheet: ss_().getUrl() };
   if (p.action === 'list') {
     var since = Number(p.since) || 0, res = [], meta = null;
     vals.forEach(function (r) {
@@ -218,7 +231,7 @@ function handle_(p) {
 }
 // Lembar "Daftar Siswa": tampilan yang mudah dibaca (dibuat ulang setiap kali menyimpan)
 function view_(sh) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet(), v = ss.getSheetByName('Daftar Siswa') || ss.insertSheet('Daftar Siswa');
+  var ss = ss_(), v = ss.getSheetByName('Daftar Siswa') || ss.insertSheet('Daftar Siswa');
   var last = sh.getLastRow(), rows = [['NIS', 'NISN', 'Nama', 'Jenis Kelamin', 'Kelas', 'Tempat & Tgl Lahir', 'Nama Ayah', 'Nama Ibu', 'Alamat', 'Diperbarui']];
   if (last > 1) sh.getRange(2, 1, last - 1, 3 + NCH).getValues().forEach(function (r) {
     if (String(r[0]) === '__meta' || r[2] === true || r[2] === 'TRUE') return;
@@ -483,7 +496,7 @@ function nDirty(){return Object.keys(D.dirty||{}).length+Object.keys(D.del||{}).
 function setSt(t){var e=$('st');if(e)e.textContent=t}
 function hm(d){return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
 function updSt(){if(!D)return;var n=nDirty(),b=$('svb');if(b){b.disabled=(DBH&&RO)||SAVING;b.textContent=n?'Simpan ('+n+')':'Simpan'}if(SAVING)return;
- if(!DBH)setSt(CONN?'Menghubungkan\u2026':'Mode lokal \u00b7 klik Database');else if(RO)setSt('Hanya baca');else if(n)setSt('\u25cf '+n+' belum disimpan');else setSt('Online'+(LASTSAVE?' \u00b7 tersimpan '+hm(LASTSAVE):''))}
+ if(!DBH)setSt(CONN?'Menghubungkan\u2026':'Mode lokal \u00b7 klik Database');else if(RO)setSt('Hanya baca');else if(n){setSt('\u25cf '+n+(AUTO&&DBH?' menunggu simpan otomatis':' belum disimpan'));schedAuto()}else setSt('Online'+(LASTSAVE?' \u00b7 tersimpan '+hm(LASTSAVE):''))}
 function dirtyFromPath(p){if(p.charAt(0)=='$'){var m=/^\$\.students\.(\d+)\./.exec(p);if(m){var s=D.students[+m[1]];if(s)markDirty(s.id)}else markMeta()}else if(cid)markDirty(cid)}
 function typing(){var a=document.activeElement,m=$('main');return !!(a&&a.tagName&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&m&&m.contains&&m.contains(a))}
 function afterRemote(){if(typing()){clearTimeout(afterRemote.t);afterRemote.t=setTimeout(afterRemote,1500);return}if(!D.students.some(function(s){return s.id==cid}))cid=(D.students[0]||{}).id||null;render();updSt()}
@@ -515,7 +528,7 @@ async function saveOnline(){
   for(var i=0;i<ids.length;i++){var id=ids[i],s=D.students.filter(function(x){return x.id==id})[0];if(s){await retry(function(){return DBH.collection('students').doc(id).set(JSON.parse(JSON.stringify(s)))})}delete D.dirty[id];setSt('Menyimpan '+(++done)+'/'+total+'\u2026')}
   for(var j=0;j<dels.length;j++){var did=dels[j];await retry(function(){return DBH.collection('students').doc(did).delete()});delete D.del[did];setSt('Menyimpan '+(++done)+'/'+total+'\u2026')}
   D.synced=1;LASTSAVE=new Date();save();SAVING=false;updSt();
- }catch(e){SAVING=false;save();updSt();var c=e&&e.code;toast('Penyimpanan online gagal'+(c?' ('+c+')':'')+': '+((e&&e.message)||e)+'\nPerubahan yang belum tersimpan tetap aman di perangkat ini; coba tekan Simpan lagi.')}
+ }catch(e){AUTOFAIL=Date.now();SAVING=false;save();updSt();var c=e&&e.code;toast('Penyimpanan online gagal'+(c?' ('+c+')':'')+': '+((e&&e.message)||e)+'\nPerubahan yang belum tersimpan tetap aman di perangkat ini; coba tekan Simpan lagi.')}
 }
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&(e.key=='s'||e.key=='S')&&DBH){e.preventDefault();saveOnline()}});
 window.addEventListener&&window.addEventListener('beforeunload',function(e){if(D&&nDirty()&&DBH){e.preventDefault();e.returnValue=''}});
@@ -585,13 +598,13 @@ async function saveGas(){var cfg=DBH.cfg,ids=Object.keys(D.dirty).filter(functio
   if(dels.length){var r2=await gasCall(cfg.url,cfg.key,{action:'save',deleted:dels});dels.forEach(function(id){delete D.del[id];delete GAS.map[id]});done+=dels.length;GAS.t=Math.max(GAS.t,(r2.time||0)-5000)}
   if(meta){var mo=JSON.parse(JSON.stringify({sch:D.sch||{},pem:D.pem||{},kelasList:D.kelasList||[]}));var r3=await gasCall(cfg.url,cfg.key,{action:'save',meta:mo});delete D.dirty.__meta;GAS.meta=mo;GAS.t=Math.max(GAS.t,(r3.time||0)-5000)}
   ids.forEach(function(id){delete D.dirty[id]});D.synced=1;LASTSAVE=new Date();save();SAVING=false;updSt();
- }catch(e){SAVING=false;save();updSt();toast('Penyimpanan online gagal: '+((e&&e.message)||e)+'\nPerubahan tetap aman di perangkat ini; coba tekan Simpan lagi.')}}
-function openCloud(){var c=CLOUD||{};$('cu').value=c.url||'';$('ck').value=c.key||'';$('cm').textContent=DBH?(DBH.kind=='gas'?'Status: terhubung ke Google Sheets.':'Status: terhubung lewat claude.ai (tidak perlu pengaturan).'):'Status: belum terhubung.';$('dc').showModal()}
+ }catch(e){AUTOFAIL=Date.now();SAVING=false;save();updSt();toast('Penyimpanan online gagal: '+((e&&e.message)||e)+'\nPerubahan tetap aman di perangkat ini; coba tekan Simpan lagi.')}}
+function openCloud(){var c=CLOUD||{};$('cu').value=c.url||'';$('ck').value=c.key||'';$('cm').textContent=DBH?(DBH.kind=='gas'?'Status: terhubung ke Google Sheets.':'Status: terhubung lewat claude.ai (tidak perlu pengaturan).'):'Status: belum terhubung.';$('cauto').checked=AUTO;$('dc').showModal()}
 function cloudConnect(){var u=$('cu').value.trim(),k=$('ck').value.trim();
  if(!/^https:\/\/script\.google\.com\/.+/.test(u)){$('cm').textContent='URL harus diawali https://script.google.com/ dan berakhiran /exec.';return}
  if(!k){$('cm').textContent='Isi kunci yang sama dengan di skrip.';return}
  $('cm').textContent='Menghubungkan\u2026';stopPoll();
- gasCall(u,k,{action:'ping'}).then(function(){CLOUD={url:u,key:k};try{localStorage.setItem('bi55-cloud',JSON.stringify(CLOUD))}catch(e){}DBH=null;return connectGas(CLOUD)}).then(function(){$('cm').textContent='Berhasil terhubung. Data online sudah dimuat'+(D.dirty&&Object.keys(D.dirty).length?'; tekan Simpan untuk mengunggah data lokal.':'.')}).catch(function(e){$('cm').textContent='Gagal: '+((e&&e.message)||e)})}
+ gasCall(u,k,{action:'ping'}).then(function(pj){CLOUD={url:u,key:k,sheet:(pj&&pj.sheet)||''};try{localStorage.setItem('bi55-cloud',JSON.stringify(CLOUD))}catch(e){}DBH=null;return connectGas(CLOUD)}).then(function(){$('cm').innerHTML='Berhasil terhubung. Data online sudah dimuat'+(D.dirty&&Object.keys(D.dirty).length?'; perubahan lokal akan terkirim otomatis atau saat Simpan ditekan.':'.')+(CLOUD.sheet?' <a href="'+esc(CLOUD.sheet)+'" target="_blank" rel="noopener">Buka Google Sheet</a>':'')}).catch(function(e){$('cm').textContent='Gagal: '+((e&&e.message)||e)})}
 function cloudDisconnect(){stopPoll();CLOUD=null;try{localStorage.removeItem('bi55-cloud')}catch(e){}if(DBH&&DBH.kind=='gas')DBH=null;updSt();$('cm').textContent='Diputuskan. Aplikasi kembali ke mode lokal.'}
 function cloudLink(){if(!CLOUD||!CLOUD.url){$('cm').textContent='Hubungkan dulu, baru tautan pengaturan bisa disalin.';return}
  var t=location.origin+location.pathname+'#cfg='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify({url:CLOUD.url,key:CLOUD.key})))));
@@ -751,6 +764,10 @@ document.addEventListener('change',function(e){if(e.target&&e.target.id=='imf'&&
 document.addEventListener('input',function(e){if(e.target&&e.target.id=='imt'){impReset(true);if(e.target.value.trim()){IMP.n=1;setTab(parseText(e.target.value))}renderImp()}});
 document.addEventListener('input',function(e){if(e.target&&(e.target.id=='imk'||e.target.id=='imy')&&(IMP.n||IMP.msgs.length))renderImp()});
 ['dragover','drop'].forEach(function(ev){document.addEventListener(ev,function(e){var z=e.target&&e.target.closest&&e.target.closest('#impdrop');if(!z)return;e.preventDefault();if(ev=='drop'&&e.dataTransfer&&e.dataTransfer.files.length)impFiles(Array.prototype.slice.call(e.dataTransfer.files))})});
+/* ---------- simpan otomatis ---------- */
+var AUTO=true,AUTOFAIL=0,autoT=null;try{AUTO=localStorage.getItem('bi55-auto')!='0'}catch(e){}
+function setAuto(v){AUTO=!!v;try{localStorage.setItem('bi55-auto',AUTO?'1':'0')}catch(e){}updSt()}
+function schedAuto(){if(!AUTO||!DBH||RO||SAVING||Date.now()-AUTOFAIL<60000)return;clearTimeout(autoT);autoT=setTimeout(function(){if(AUTO&&DBH&&!RO&&!SAVING&&nDirty())saveOnline()},3000)}
 /* ---------- login ---------- */
 var HASH="6ac1008a42876078da36c0b10baff37e678bf059132b9d4f4915b57768a34547",fails=0,lockUntil=0,started=false;
 function sha(t){var b=new TextEncoder().encode(t);return crypto.subtle.digest("SHA-256",b).then(function(d){return Array.prototype.map.call(new Uint8Array(d),function(x){return("0"+x.toString(16)).slice(-2)}).join("")})}
